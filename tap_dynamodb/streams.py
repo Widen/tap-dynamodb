@@ -11,17 +11,18 @@ from tap_dynamodb.client import DynamoDBStream
 class DynamicStream(DynamoDBStream):
     """Define dynamic stream."""
 
-    def __init__(self,
-                 tap,
-                 name,
-                 primary_keys=None,
-                 replication_key=None,
-                 except_keys=None,
-                 records_path=None,
-                 schema=None,
-                 client=None,
-                 orig_projection=None,
-                 ):
+    def __init__(
+        self,
+        tap,
+        name,
+        primary_keys=None,
+        replication_key=None,
+        except_keys=None,
+        records_path=None,
+        schema=None,
+        client=None,
+        orig_projection=None,
+    ):
         super().__init__(tap=tap, name=tap.name, schema=schema)
         if primary_keys is None:
             primary_keys = []

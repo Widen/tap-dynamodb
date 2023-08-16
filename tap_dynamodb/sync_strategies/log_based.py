@@ -18,28 +18,26 @@ def get_shards(streams_client, stream_arn):
     will infinitely loop over the lastEvaluatedShardId
     """
 
-    params = {
-        'StreamArn': stream_arn
-    }
+    params = {"StreamArn": stream_arn}
 
     has_more = True
 
     while has_more:
-        stream_info = streams_client.describe_stream(**params)['StreamDescription']
+        stream_info = streams_client.describe_stream(**params)["StreamDescription"]
 
-        for shard in stream_info['Shards']:
+        for shard in stream_info["Shards"]:
             # See
             # https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_streams_DescribeStream.html
             # for documentation on how to identify closed shards
             # Closed shards all have an EndingSequenceNumber
-            if shard['SequenceNumberRange'].get('EndingSequenceNumber'):
+            if shard["SequenceNumberRange"].get("EndingSequenceNumber"):
                 yield shard
 
-        last_evaluated_shard_id = stream_info.get('LastEvaluatedShardId')
+        last_evaluated_shard_id = stream_info.get("LastEvaluatedShardId")
         has_more = last_evaluated_shard_id is not None
 
         if has_more:
-            params['ExclusiveStartShardId'] = last_evaluated_shard_id
+            params["ExclusiveStartShardId"] = last_evaluated_shard_id
 
 
 def get_shard_records(streams_client, stream_arn, shard, sequence_number):
@@ -49,29 +47,29 @@ def get_shard_records(streams_client, stream_arn, shard, sequence_number):
     Yields the records on a shard.
     """
     if sequence_number:
-        iterator_type = 'AFTER_SEQUENCE_NUMBER'
+        iterator_type = "AFTER_SEQUENCE_NUMBER"
     else:
-        iterator_type = 'TRIM_HORIZON'
+        iterator_type = "TRIM_HORIZON"
 
     params = {
-        'StreamArn': stream_arn,
-        'ShardId': shard['ShardId'],
-        'ShardIteratorType': iterator_type
+        "StreamArn": stream_arn,
+        "ShardId": shard["ShardId"],
+        "ShardIteratorType": iterator_type,
     }
 
     if sequence_number:
-        params['SequenceNumber'] = sequence_number
+        params["SequenceNumber"] = sequence_number
 
-    shard_iterator = streams_client.get_shard_iterator(**params)['ShardIterator']
+    shard_iterator = streams_client.get_shard_iterator(**params)["ShardIterator"]
 
     # This will loop indefinitely if called on open shards
     while shard_iterator:
         records = streams_client.get_records(ShardIterator=shard_iterator, Limit=1000)
 
-        for record in records['Records']:
+        for record in records["Records"]:
             yield record
 
-        shard_iterator = records.get('NextShardIterator')
+        shard_iterator = records.get("NextShardIterator")
 
 
 def has_stream_aged_out(state, table_name):
@@ -86,7 +84,7 @@ def has_stream_aged_out(state, table_name):
     """
     current_time = singer.utils.now()
 
-    success_timestamp = singer.get_bookmark(state, table_name, 'success_timestamp')
+    success_timestamp = singer.get_bookmark(state, table_name, "success_timestamp")
 
     # If we have no success_timestamp then we have aged out
     if not success_timestamp:
@@ -107,10 +105,14 @@ def get_initial_bookmarks(config, state, table_name):
     client = dynamodb.get_client(config)
     streams_client = dynamodb.get_stream_client(config)
 
-    table = client.describe_table(TableName=table_name)['Table']
-    stream_arn = table['LatestStreamArn']
+    table = client.describe_table(TableName=table_name)["Table"]
+    stream_arn = table["LatestStreamArn"]
 
-    finished_shard_bookmarks = [shard['ShardId'] for shard in get_shards(streams_client, stream_arn)]
-    state = singer.write_bookmark(state, table_name, 'finished_shards', finished_shard_bookmarks)
+    finished_shard_bookmarks = [
+        shard["ShardId"] for shard in get_shards(streams_client, stream_arn)
+    ]
+    state = singer.write_bookmark(
+        state, table_name, "finished_shards", finished_shard_bookmarks
+    )
 
     return state
