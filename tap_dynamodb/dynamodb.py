@@ -11,7 +11,7 @@ from botocore.credentials import (
     AssumeRoleCredentialFetcher,
     CredentialResolver,
     DeferredRefreshableCredentials,
-    JSONFileCache
+    JSONFileCache,
 )
 from botocore.exceptions import ClientError
 from botocore.session import Session
@@ -20,27 +20,31 @@ LOGGER = singer.get_logger()
 
 
 def retry_pattern():
-    return backoff.on_exception(backoff.expo,
-                                ClientError,
-                                max_tries=5,
-                                on_backoff=log_backoff_attempt,
-                                factor=10)
+    return backoff.on_exception(
+        backoff.expo,
+        ClientError,
+        max_tries=5,
+        on_backoff=log_backoff_attempt,
+        factor=10,
+    )
 
 
 def log_backoff_attempt(details):
-    LOGGER.info("Error detected communicating with Amazon, triggering backoff: %d try", details.get("tries"))
+    LOGGER.info(
+        "Error detected communicating with Amazon, triggering backoff: %d try",
+        details.get("tries"),
+    )
 
 
 class AssumeRoleProvider:
-    METHOD = 'assume-role'
+    METHOD = "assume-role"
 
     def __init__(self, fetcher):
         self._fetcher = fetcher
 
     def load(self):
         return DeferredRefreshableCredentials(
-            self._fetcher.fetch_credentials,
-            self.METHOD
+            self._fetcher.fetch_credentials, self.METHOD
         )
 
 
@@ -54,17 +58,16 @@ def setup_aws_client(config):
         session.get_credentials(),
         role_arn,
         extra_args={
-            'DurationSeconds': 3600,
-            'RoleSessionName': 'TapDynamodDB',
-            'ExternalId': config['external_id']
+            "DurationSeconds": 3600,
+            "RoleSessionName": "TapDynamodDB",
+            "ExternalId": config["external_id"],
         },
-        cache=JSONFileCache()
+        cache=JSONFileCache(),
     )
 
     refreshable_session = Session()
     refreshable_session.register_component(
-        'credential_provider',
-        CredentialResolver([AssumeRoleProvider(fetcher)])
+        "credential_provider", CredentialResolver([AssumeRoleProvider(fetcher)])
     )
 
     LOGGER.info(f"Attempting to assume_role on RoleArn: {role_arn}")
@@ -72,16 +75,20 @@ def setup_aws_client(config):
 
 
 def get_client(config):
-    if config.get('use_local_dynamo'):
-        return boto3.client('dynamodb',
-                            endpoint_url='http://localhost:8000',
-                            region_name=config['region_name'])
-    return boto3.client('dynamodb', config['region_name'])
+    if config.get("use_local_dynamo"):
+        return boto3.client(
+            "dynamodb",
+            endpoint_url="http://localhost:8000",
+            region_name=config["region_name"],
+        )
+    return boto3.client("dynamodb", config["region_name"])
 
 
 def get_stream_client(config):
-    if config.get('use_local_dynamo'):
-        return boto3.client('dynamodbstreams',
-                            endpoint_url='http://localhost:8000',
-                            region_name=config['region_name'])
-    return boto3.client('dynamodbstreams', region_name=config['region_name'])
+    if config.get("use_local_dynamo"):
+        return boto3.client(
+            "dynamodbstreams",
+            endpoint_url="http://localhost:8000",
+            region_name=config["region_name"],
+        )
+    return boto3.client("dynamodbstreams", region_name=config["region_name"])

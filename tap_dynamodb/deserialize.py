@@ -16,14 +16,14 @@ class Deserializer(TypeDeserializer):
     """
 
     def deserialize_item(self, item):
-        return self.deserialize({'M': item})
+        return self.deserialize({"M": item})
 
     def _deserialize_b(self, value):
         """
         Deserializes binary data as a base64 encoded string because that's how
         the aws cli returns binary data
         """
-        return base64.b64encode(value).decode('utf-8')
+        return base64.b64encode(value).decode("utf-8")
 
     def _deserialize_ns(self, value):
         """
@@ -45,9 +45,9 @@ class Deserializer(TypeDeserializer):
 
     def _apply_projection(self, record, breadcrumb, output):
         if len(breadcrumb) == 1:
-            if '[' in breadcrumb[0]:
-                breadcrumb_key = breadcrumb[0].split('[')[0]
-                index = int(breadcrumb[0].split('[')[1].split(']')[0])
+            if "[" in breadcrumb[0]:
+                breadcrumb_key = breadcrumb[0].split("[")[0]
+                index = int(breadcrumb[0].split("[")[1].split("]")[0])
                 if output.get(breadcrumb_key):
                     output[breadcrumb_key].append(record[breadcrumb_key][index])
                 else:
@@ -56,16 +56,22 @@ class Deserializer(TypeDeserializer):
             else:
                 output[breadcrumb[0]] = record.get(breadcrumb[0])
         else:
-            if '[' in breadcrumb[0]:
-                breadcrumb_key = breadcrumb[0].split('[')[0]
-                index = int(breadcrumb[0].split('[')[1].split(']')[0])
+            if "[" in breadcrumb[0]:
+                breadcrumb_key = breadcrumb[0].split("[")[0]
+                index = int(breadcrumb[0].split("[")[1].split("]")[0])
                 if output.get(breadcrumb_key) is None:
                     output[breadcrumb_key] = [{}]
-                self._apply_projection(record[breadcrumb_key][index], breadcrumb[1:], output[breadcrumb_key][0])
+                self._apply_projection(
+                    record[breadcrumb_key][index],
+                    breadcrumb[1:],
+                    output[breadcrumb_key][0],
+                )
             else:
                 if output.get(breadcrumb[0]) is None:
                     output[breadcrumb[0]] = {}
-                self._apply_projection(record[breadcrumb[0]], breadcrumb[1:], output[breadcrumb[0]])
+                self._apply_projection(
+                    record[breadcrumb[0]], breadcrumb[1:], output[breadcrumb[0]]
+                )
 
     def apply_projection(self, record, projections):
         output = {}

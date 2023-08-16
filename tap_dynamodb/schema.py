@@ -43,9 +43,15 @@ def is_datetime(obj):
     """Determine if an object is a datetime or not."""
     # TODO: This is a very loose regex for date-time.
     return (
-            type(obj) is datetime.datetime or
-            type(obj) is datetime.date or
-            (type(obj) is str and re.match("(19|20)\\d\\d-(0[1-9]|1[012])-([1-9]|0[1-9]|[12][0-9]|3[01])", obj) is not None)
+        type(obj) is datetime.datetime
+        or type(obj) is datetime.date
+        or (
+            type(obj) is str
+            and re.match(
+                "(19|20)\\d\\d-(0[1-9]|1[012])-([1-9]|0[1-9]|[12][0-9]|3[01])", obj
+            )
+            is not None
+        )
     )
 
 
@@ -96,16 +102,16 @@ def flatten_json(y, except_keys=None):
         except_keys = []
 
     def t(s: str) -> str:
-        translation_table = s.maketrans('-.', '__')
+        translation_table = s.maketrans("-.", "__")
         return s.translate(translation_table)
 
-    def flatten(x, exception_keys, name=''):
+    def flatten(x, exception_keys, name=""):
         if type(x) is dict:
             for k in x:
                 if name + k in exception_keys:
                     out[t(name + k)] = json.dumps(x[k])
                 else:
-                    flatten(x[k], exception_keys, name + k + '_')
+                    flatten(x[k], exception_keys, name + k + "_")
 
         elif type(x) is list:
             out[t(name[:-1])] = json.dumps(x)
